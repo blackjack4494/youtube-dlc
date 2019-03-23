@@ -1190,7 +1190,6 @@ from .tube8 import Tube8IE
 from .tubitv import TubiTvIE
 from .tumblr import TumblrIE
 from .tunein import (
-    TuneInClipIE,
     TuneInStationIE,
     TuneInProgramIE,
     TuneInTopicIE,
