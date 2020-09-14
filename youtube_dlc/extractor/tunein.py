@@ -88,7 +88,7 @@ class TuneInBaseIE(InfoExtractor):
 
 class TuneInStationIE(TuneInBaseIE):
     IE_NAME = 'tunein:station'
-    _VALID_URL = r'https?://(?:www\.)?tunein\.com/(?:radio/.*?-s|station/.*?StationId=|embed/player/s)(?P<id>\d+)'
+    _VALID_URL = r'https?://(?:www\.)?tunein\.com(:443)?/(?:radio/.*?-s|station/.*?StationId=|embed/player/s)(?P<id>\d+)'
     _CONTENT_TYPE = 's'  # station
 
     _TESTS = [{
@@ -110,7 +110,7 @@ class TuneInStationIE(TuneInBaseIE):
 
 class TuneInProgramIE(TuneInBaseIE):
     IE_NAME = 'tunein:program'
-    _VALID_URL = r'https?://(?:www\.)?tunein\.com/(?:(?:radio|podcasts)/.*?-p|program/.*?ProgramId=|embed/player/p)(?P<id>\d+)'
+    _VALID_URL = r'https?://(?:www\.)?tunein\.com(:443)?/(?:(?:radio|podcasts)/.*?-p|program/.*?ProgramId=|embed/player/p)(?P<id>\d+)'
     _CONTENT_TYPE = 'p'  # program
 
     _TESTS = [{
@@ -170,7 +170,7 @@ class TuneInProgramIE(TuneInBaseIE):
 
 class TuneInTopicIE(TuneInBaseIE):
     IE_NAME = 'tunein:topic'
-    _VALID_URL = r'https?://(?:www\.)?tunein\.com/(?:(?:topic|podcasts)/.*?(?:T|t)opicId=|embed/player/t)(?P<id>\d+)'
+    _VALID_URL = r'https?://(?:www\.)?tunein\.com(:443)?/(?:(?:topic|podcasts)/.*?(?:T|t)opicId=|embed/player/t)(?P<id>\d+)'
     _CONTENT_TYPE = 't'  # topic
 
     _TESTS = [{
