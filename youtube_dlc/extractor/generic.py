@@ -2300,8 +2300,8 @@ class GenericIE(InfoExtractor):
         if head_response is not False:
             # Check for redirect
             new_url = head_response.geturl()
-            #fix twitter redirect that prevents automated downloads from their shortened urls
-            new_url = new_url.replace("https://twitter.com/safety/unsafe_link_warning?unsafe_link=","")
+            # Fix twitter redirect that prevents automated downloads from their shortened urls
+            new_url = new_url.replace("https://twitter.com/safety/unsafe_link_warning?unsafe_link=", "")
             if url != new_url:
                 self.report_following_redirect(new_url)
                 if force_videoid:
