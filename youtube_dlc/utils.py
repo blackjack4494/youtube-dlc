@@ -2092,6 +2092,12 @@ def sanitize_filename(s, restricted=False, is_id=False):
             return '' if restricted else '\''
         elif char == ':':
             return '_-' if restricted else ' -'
+        elif char == '|':
+            return chr(65372)
+        elif char == '/':
+            return chr(10744)
+        elif char == '\\':
+            return chr(10745)
         elif char in '\\/|*<>':
             return '_'
         if restricted and (char in '!&\'()[]{}$;`^,#' or char.isspace()):
