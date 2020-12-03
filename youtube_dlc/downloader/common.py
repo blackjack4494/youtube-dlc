@@ -5,8 +5,12 @@ import re
 import sys
 import time
 import random
+import threading
 
-from ..compat import compat_os_name
+from ..compat import (
+    compat_os_name,
+    compat_urllib_request,
+)
 from ..utils import (
     decodeArgument,
     encodeFilename,
@@ -326,7 +330,7 @@ class FileDownloader(object):
         """Report it was impossible to resume download."""
         self.to_screen('[download] Unable to resume')
 
-    def download(self, filename, info_dict):
+    def download(self, filename, info_dict, subtitle=False):
         """Download to a filename using the info from info_dict
         Return True on success and False otherwise
         """
@@ -353,17 +357,57 @@ class FileDownloader(object):
                 })
                 return True
 
-        min_sleep_interval = self.params.get('sleep_interval')
-        if min_sleep_interval:
-            max_sleep_interval = self.params.get('max_sleep_interval', min_sleep_interval)
-            sleep_interval = random.uniform(min_sleep_interval, max_sleep_interval)
-            self.to_screen(
-                '[download] Sleeping %s seconds...' % (
-                    int(sleep_interval) if sleep_interval.is_integer()
-                    else '%.2f' % sleep_interval))
-            time.sleep(sleep_interval)
+        if subtitle is False:
+            min_sleep_interval = self.params.get('sleep_interval')
+            if min_sleep_interval:
+                max_sleep_interval = self.params.get('max_sleep_interval', min_sleep_interval)
+                sleep_interval = random.uniform(min_sleep_interval, max_sleep_interval)
+                self.to_screen(
+                    '[download] Sleeping %s seconds...' % (
+                        int(sleep_interval) if sleep_interval.is_integer()
+                        else '%.2f' % sleep_interval))
+                time.sleep(sleep_interval)
+        else:
+            sleep_interval_sub = 0
+            if type(self.params.get('sleep_interval_subtitles')) is int:
+                sleep_interval_sub = self.params.get('sleep_interval_subtitles')
+            if sleep_interval_sub > 0:
+                self.to_screen(
+                    '[download] Sleeping %s seconds...' % (
+                        sleep_interval_sub))
+                time.sleep(sleep_interval_sub)
 
-        return self.real_download(filename, info_dict)
+        timer = [None]
+        heartbeat_lock = None
+        download_complete = False
+        if 'heartbeat_url' in info_dict:
+            heartbeat_lock = threading.Lock()
+
+            heartbeat_url = info_dict['heartbeat_url']
+            heartbeat_data = info_dict['heartbeat_data']
+            heartbeat_interval = info_dict.get('heartbeat_interval', 30)
+            self.to_screen('[download] Heartbeat with %s second interval...' % heartbeat_interval)
+
+            def heartbeat():
+                try:
+                    compat_urllib_request.urlopen(url=heartbeat_url, data=heartbeat_data.encode())
+                except Exception:
+                    self.to_screen('[download] Heartbeat failed')
+
+                with heartbeat_lock:
+                    if not download_complete:
+                        timer[0] = threading.Timer(heartbeat_interval, heartbeat)
+                        timer[0].start()
+
+            heartbeat()
+
+        try:
+            return self.real_download(filename, info_dict)
+        finally:
+            if heartbeat_lock:
+                with heartbeat_lock:
+                    timer[0].cancel()
+                    download_complete = True
 
     def real_download(self, filename, info_dict):
         """Real download process. Redefine in subclasses."""

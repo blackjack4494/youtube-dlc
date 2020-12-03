@@ -15,6 +15,7 @@ from ..utils import (
     ExtractorError,
     int_or_none,
     float_or_none,
+    OnDemandPagedList,
     parse_duration,
     parse_iso8601,
     remove_start,
@@ -195,6 +196,46 @@ class NiconicoIE(InfoExtractor):
         session_api_data = api_data['video']['dmcInfo']['session_api']
         session_api_endpoint = session_api_data['urls'][0]
 
+        # ping
+        self._download_json(
+            'https://nvapi.nicovideo.jp/v1/2ab0cbaa/watch', video_id,
+            query={'t': api_data['video']['dmcInfo']['tracking_id']},
+            headers={
+                'Origin': 'https://www.nicovideo.jp',
+                'Referer': 'https://www.nicovideo.jp/watch/' + video_id,
+                'X-Frontend-Id': '6',
+                'X-Frontend-Version': '0'
+            })
+
+        # hls (encryption)
+        if 'encryption' in api_data['video']['dmcInfo']:
+            session_api_http_parameters = {
+                'parameters': {
+                    'hls_parameters': {
+                        'encryption': {
+                            'hls_encryption_v1': {
+                                'encrypted_key': api_data['video']['dmcInfo']['encryption']['hls_encryption_v1']['encrypted_key'],
+                                'key_uri': api_data['video']['dmcInfo']['encryption']['hls_encryption_v1']['key_uri']
+                            }
+                        },
+                        'transfer_preset': '',
+                        'use_ssl': yesno(session_api_endpoint['is_ssl']),
+                        'use_well_known_port': yesno(session_api_endpoint['is_well_known_port']),
+                        'segment_duration': 6000
+                    }
+                }
+            }
+        # http
+        else:
+            session_api_http_parameters = {
+                'parameters': {
+                    'http_output_download_parameters': {
+                        'use_ssl': yesno(session_api_endpoint['is_ssl']),
+                        'use_well_known_port': yesno(session_api_endpoint['is_well_known_port']),
+                    }
+                }
+            }
+
         format_id = '-'.join(map(lambda s: remove_start(s['id'], 'archive_'), [video_quality, audio_quality]))
 
         session_response = self._download_json(
@@ -233,14 +274,7 @@ class NiconicoIE(InfoExtractor):
                     'protocol': {
                         'name': 'http',
                         'parameters': {
-                            'http_parameters': {
-                                'parameters': {
-                                    'http_output_download_parameters': {
-                                        'use_ssl': yesno(session_api_endpoint['is_ssl']),
-                                        'use_well_known_port': yesno(session_api_endpoint['is_well_known_port']),
-                                    }
-                                }
-                            }
+                            'http_parameters': session_api_http_parameters
                         }
                     },
                     'recipe_id': session_api_data['recipe_id'],
@@ -254,6 +288,12 @@ class NiconicoIE(InfoExtractor):
                 }
             }).encode())
 
+        # get heartbeat info
+        heartbeat_url = session_api_endpoint['url'] + '/' + session_response['data']['session']['id'] + '?_format=json&_method=PUT'
+        heartbeat_data = json.dumps(session_response['data'])
+        # interval, convert milliseconds to seconds, then halve to make a buffer.
+        heartbeat_interval = session_api_data['heartbeat_lifetime'] / 2000
+
         resolution = video_quality.get('resolution', {})
 
         return {
@@ -264,6 +304,13 @@ class NiconicoIE(InfoExtractor):
             'vbr': float_or_none(video_quality.get('bitrate'), 1000),
             'height': resolution.get('height'),
             'width': resolution.get('width'),
+            'heartbeat_url': heartbeat_url,
+            'heartbeat_data': heartbeat_data,
+            'heartbeat_interval': heartbeat_interval,
+            'http_headers': {
+                'Origin': 'https://www.nicovideo.jp',
+                'Referer': 'https://www.nicovideo.jp/watch/' + video_id,
+            }
         }
 
     def _real_extract(self, url):
@@ -354,7 +401,7 @@ class NiconicoIE(InfoExtractor):
                 return dict_get(api_data['video'], items)
 
         # Start extracting information
-        title = get_video_info('title')
+        title = get_video_info('originalTitle')
         if not title:
             title = self._og_search_title(webpage, default=None)
         if not title:
@@ -369,7 +416,8 @@ class NiconicoIE(InfoExtractor):
         video_detail = watch_api_data.get('videoDetail', {})
 
         thumbnail = (
-            get_video_info(['thumbnail_url', 'thumbnailURL'])
+            self._html_search_regex(r'<meta property="og:image" content="([^"]+)">', webpage, 'thumbnail data', default=None)
+            or get_video_info(['thumbnail_url', 'largeThumbnailURL', 'thumbnailURL'])
             or self._html_search_meta('image', webpage, 'thumbnail', default=None)
             or video_detail.get('thumbnail'))
 
@@ -437,13 +485,20 @@ class NiconicoIE(InfoExtractor):
 
 
 class NiconicoPlaylistIE(InfoExtractor):
-    _VALID_URL = r'https?://(?:www\.)?nicovideo\.jp/mylist/(?P<id>\d+)'
+    _VALID_URL = r'https?://(?:www\.)?nicovideo\.jp(/user/.*)?/mylist/(?P<id>\d+)'
 
     _TEST = {
         'url': 'http://www.nicovideo.jp/mylist/27411728',
         'info_dict': {
             'id': '27411728',
             'title': 'AKB48のオールナイトニッポン',
+            'uploader': 'のっく',
+            'uploader_id': '805442',
+            'description': '''各うｐ主に感謝。\r
+\r
+私個人でうｐしているものに関しては、私が聴きたい形でのうｐをしておりますので現在の形式にプラスされるであろう、視聴者の建設的な意見以外の要望には一切対応致しません。\r
+曲カット等の形式を希望されるのであれば、御自分でうｐするようにして下さい。\r
+曲カット版はほぼ全く需要が無いのが過去の事例で判明しているので、こちらでは対応致しません。'''
         },
         'playlist_mincount': 225,
     }
@@ -452,19 +507,40 @@ class NiconicoPlaylistIE(InfoExtractor):
         list_id = self._match_id(url)
         webpage = self._download_webpage(url, list_id)
 
-        entries_json = self._search_regex(r'Mylist\.preload\(\d+, (\[.*\])\);',
-                                          webpage, 'entries')
-        entries = json.loads(entries_json)
-        entries = [{
-            '_type': 'url',
-            'ie_key': NiconicoIE.ie_key(),
-            'url': ('http://www.nicovideo.jp/watch/%s' %
-                    entry['item_data']['video_id']),
-        } for entry in entries]
+        header = self._parse_json(self._html_search_regex(
+            r'data-common-header="([^"]+)"', webpage,
+            'webpage header'), list_id)
+        frontendId = header.get('initConfig').get('frontendId')
+        frontendVersion = header.get('initConfig').get('frontendVersion')
+
+        def get_page_data(pagenum, pagesize):
+            return self._download_json(
+                'http://nvapi.nicovideo.jp/v2/mylists/' + list_id, list_id,
+                query={'page': 1 + pagenum, 'pageSize': pagesize},
+                headers={
+                    'X-Frontend-Id': frontendId,
+                    'X-Frontend-Version': frontendVersion,
+                }).get('data').get('mylist')
+
+        data = get_page_data(0, 1)
+        title = data.get('name')
+        description = data.get('description')
+        uploader = data.get('owner').get('name')
+        uploader_id = data.get('owner').get('id')
+
+        def pagefunc(pagenum):
+            data = get_page_data(pagenum, 25)
+            return ({
+                '_type': 'url',
+                'url': 'http://www.nicovideo.jp/watch/' + item.get('watchId'),
+            } for item in data.get('items'))
 
         return {
             '_type': 'playlist',
-            'title': self._search_regex(r'\s+name: "(.*?)"', webpage, 'title'),
             'id': list_id,
-            'entries': entries,
+            'title': title,
+            'description': description,
+            'uploader': uploader,
+            'uploader_id': uploader_id,
+            'entries': OnDemandPagedList(pagefunc, 25),
         }

@@ -1,15 +1,15 @@
-[![Build Status](https://travis-ci.com/blackjack4494/youtube-dlc.svg?branch=master)](https://travis-ci.com/blackjack4494/youtube-dlc)
+[![Build Status](https://travis-ci.com/blackjack4494/yt-dlc.svg?branch=master)](https://travis-ci.com/blackjack4494/yt-dlc)
 [![PyPi](https://img.shields.io/pypi/v/youtube-dlc.svg)](https://pypi.org/project/youtube-dlc)
-[![Downloads](https://pepy.tech/badge/youtube-dlc)](https://pepy.tech/project/youtube-dlc)
 
 [![Gitter chat](https://img.shields.io/gitter/room/youtube-dlc/community)](https://gitter.im/youtube-dlc) 
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://github.com/blackjack4494/youtube-dlc/blob/master/LICENSE)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://github.com/blackjack4494/yt-dlc/blob/master/LICENSE)
 
 youtube-dlc - download videos from youtube.com or other video platforms.
 
-youtube-dlc is a fork of youtube-dl with the intention of getting features tested by the community merged in the tool faster, since youtube-dl's development seems to be slowing down. (https://github.com/ytdl-org/youtube-dl/issues/26462)
+youtube-dlc is a fork of youtube-dl with the intention of getting features tested by the community merged in the tool faster, since youtube-dl's development seems to be slowing down. (https://web.archive.org/web/20201014194602/https://github.com/ytdl-org/youtube-dl/issues/26462)
 
 - [INSTALLATION](#installation)
+- [UPDATE](#update)
 - [DESCRIPTION](#description)
 - [OPTIONS](#options)
   - [Network Options:](#network-options)
@@ -36,6 +36,7 @@ youtube-dlc is a fork of youtube-dl with the intention of getting features teste
 - [VIDEO SELECTION](#video-selection-1)
 
 # INSTALLATION
+[How to update](#update)
 
 **All Platforms**  
 Preferred way using pip:  
@@ -43,19 +44,23 @@ You may want to use `python3` instead of `python`
 
     python -m pip install --upgrade youtube-dlc
 
+If you want to install the current master branch
+
+    python -m pip install git+https://github.com/blackjack4494/yt-dlc
+
 **UNIX** (Linux, macOS, etc.)  
 Using wget:
 
-    sudo wget https://github.com/blackjack4494/youtube-dlc/releases/latest/download/youtube-dlc -O /usr/local/bin/youtube-dlc
+    sudo wget https://github.com/blackjack4494/yt-dlc/releases/latest/download/youtube-dlc -O /usr/local/bin/youtube-dlc
     sudo chmod a+rx /usr/local/bin/youtube-dlc
 
 Using curl:
 
-    sudo curl -L https://github.com/blackjack4494/youtube-dlc/releases/latest/download/youtube-dlc -o /usr/local/bin/youtube-dlc
+    sudo curl -L https://github.com/blackjack4494/yt-dlc/releases/latest/download/youtube-dlc -o /usr/local/bin/youtube-dlc
     sudo chmod a+rx /usr/local/bin/youtube-dlc
 
 
-**Windows** users can download [youtube-dlc.exe](https://github.com/blackjack4494/youtube-dlc/releases/latest/download/youtube-dlc.exe) (**do not** put in `C:\Windows\System32`!).  
+**Windows** users can download [youtube-dlc.exe](https://github.com/blackjack4494/yt-dlc/releases/latest/download/youtube-dlc.exe) (**do not** put in `C:\Windows\System32`!).  
 
 **Compile**
 To build the Windows executable yourself (without version info!)
@@ -76,6 +81,10 @@ Then simply type this
 
     make
 
+
+# UPDATE
+**DO NOT UPDATE using `-U` !** instead download binaries again or when installed with pip use a described above when installing.  
+I will add some memorable short links to the binaries so you can download them easier.
 
 # DESCRIPTION
 **youtube-dlc** is a command-line program to download videos from YouTube.com and a few more sites. It requires the Python interpreter, version 2.6, 2.7, or 3.2+, and it is not platform specific. It should work on your Unix box, on Windows or on macOS. It is released to the public domain, which means you can modify it, redistribute it or use it however you like.
@@ -208,6 +217,8 @@ Then simply type this
     --download-archive FILE          Download only videos not listed in the
                                      archive file. Record the IDs of all
                                      downloaded videos in it.
+    --break-on-existing              Stop the download process after attempting
+                                     to download a file that's in the archive.
     --include-ads                    Download advertisements as well
                                      (experimental)
 
