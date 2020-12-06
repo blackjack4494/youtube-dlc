@@ -127,11 +127,11 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(sanitize_filename('123'), '123')
 
-        self.assertEqual('abc_de', sanitize_filename('abc/de'))
+        self.assertEqual('abc⧸de', sanitize_filename('abc/de'))
         self.assertFalse('/' in sanitize_filename('abc/de///'))
 
-        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de'))
-        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|'))
+        self.assertEqual('abc⧸_⧹_｜de', sanitize_filename('abc/<>\\*|de'))
+        self.assertEqual('xxx⧸_⧹_｜', sanitize_filename('xxx/<>\\*|'))
         self.assertEqual('yes no', sanitize_filename('yes? no'))
         self.assertEqual('this - that', sanitize_filename('this: that'))
 
@@ -161,11 +161,11 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(sanitize_filename('123', restricted=True), '123')
 
-        self.assertEqual('abc_de', sanitize_filename('abc/de', restricted=True))
+        self.assertEqual('abc⧸de', sanitize_filename('abc/de', restricted=True))
         self.assertFalse('/' in sanitize_filename('abc/de///', restricted=True))
 
-        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de', restricted=True))
-        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|', restricted=True))
+        self.assertEqual('abc⧸_⧹_｜de', sanitize_filename('abc/<>\\*|de', restricted=True))
+        self.assertEqual('xxx⧸_⧹_｜', sanitize_filename('xxx/<>\\*|', restricted=True))
         self.assertEqual('yes_no', sanitize_filename('yes? no', restricted=True))
         self.assertEqual('this_-_that', sanitize_filename('this: that', restricted=True))
 
