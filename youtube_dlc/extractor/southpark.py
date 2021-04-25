@@ -44,7 +44,7 @@ class SouthParkEsIE(SouthParkIE):
 
 class SouthParkDeIE(SouthParkIE):
     IE_NAME = 'southpark.de'
-    _VALID_URL = r'https?://(?:www\.)?(?P<url>southpark\.de/(?:videoclip|collections|folgen)/(?P<id>(?P<unique_id>.+?)/.+?)(?:\?|#|$))'
+    _VALID_URL = r'https?://(?:www\.)?(?P<url>southpark\.de/(?:en/)?(?:videoclip|collections|folgen|episodes)/(?P<id>(?P<unique_id>.+?)/.+?)(?:\?|#|$))'
     # _FEED_URL = 'http://feeds.mtvnservices.com/od/feed/intl-mrss-player-feed'
 
     _TESTS = [{
@@ -54,7 +54,13 @@ class SouthParkDeIE(SouthParkIE):
         'url': 'https://www.southpark.de/folgen/jiru42/south-park-verkabelung-staffel-23-ep-9',
         'only_matching': True,
     }, {
+        'url': 'https://www.southpark.de/en/episodes/940f8z/south-park-cartman-gets-an-anal-probe-season-1-ep-1',
+        'only_matching': True,
+    }, {
         'url': 'https://www.southpark.de/collections/zzno5a/south-park-good-eats/7q26gp',
+        'only_matching': True,
+    }, {
+        'url': 'https://www.southpark.de/en/collections/50kzjb/south-park-spaced-out/umqsd7',
         'only_matching': True,
     }]
 
